@@ -1,14 +1,16 @@
 /* eslint-disable no-bitwise, no-plusplus */
-
 (() => {
   // Replace the string below with your API Token found here: https://track.toggl.com/profile
-  const TOGGL_AUTH_TOKEN = 'REPLACE_ME';
+  const TOGGL_AUTH_TOKEN = '16563ec028a7c4bd1a851f2b0f1f911b';
+
   // Name of the tag we use to assign what you're working on
   // (this makes it easier to reset the changes made to the name)
   const TRACKING_TAG_NAME = 'working-on';
   // this is the name prefix so it's easy to identify what you're working on.
   // Replace this if you would like something different
   const TRACKING_NAME_PREFIX = '🎯';
+
+  const BASE_URL = `https://www.toggl.com/api/v8/`
 
   // the following is a pollyfill for base64 taken from https://github.com/MaxArt2501/base64-js/blob/master/base64.js
   function btoa(stringParam) {
@@ -58,13 +60,14 @@
         time_entry: timeEntry,
       }),
     );
+    console.info(`[Toggl] creating timmer with: ${JSON.stringify({time_entry: timeEntry})}`)
     fetchRequest.method = 'POST';
     fetchRequest.headers = {
       Authorization: AuthHeader,
       'Content-Type': 'application/json',
     };
     fetchRequest.url = URL.fromString(
-      'https://www.toggl.com/api/v8/time_entries/start',
+      `${BASE_URL}time_entries/start`,
     );
     const r = await fetchRequest.fetch();
 
@@ -84,7 +87,7 @@
       'Content-Type': 'application/json',
     };
     fetchRequest.url = URL.fromString(
-      'https://www.toggl.com/api/v8/time_entries/current',
+      `${BASE_URL}time_entries/current`,
     );
     const r = await fetchRequest.fetch();
 
@@ -116,12 +119,14 @@
   };
 
   dependencyLibrary.createTogglProject = async function createTogglProject(
-    name,
+    name, cid
   ) {
     const fetchRequest = new URL.FetchRequest();
     fetchRequest.bodyData = Data.fromString(
-      JSON.stringify({ project: { name } }),
+      JSON.stringify({ project: { name, cid } }),
     );
+    console.info(JSON.stringify({ project: { name, cid } }))
+
     fetchRequest.method = 'POST';
     fetchRequest.headers = {
       Authorization: AuthHeader,
@@ -139,7 +144,33 @@
     return JSON.parse(r.bodyString).data;
   };
 
-  dependencyLibrary.getTogglProjects = async function getTogglProjects() {
+  dependencyLibrary.createTogglClient = async function createTogglClient(
+    name, wid
+  ) {
+    const fetchRequest = new URL.FetchRequest();
+    
+    fetchRequest.bodyData = Data.fromString(
+      JSON.stringify({ client: { name, wid } }),
+    );
+    console.info(JSON.stringify({ client: { name, wid } }))
+    fetchRequest.method = 'POST';
+    fetchRequest.headers = {
+      Authorization: AuthHeader,
+      'Content-Type': 'application/json',
+    };
+    fetchRequest.url = URL.fromString(
+      `${BASE_URL}clients`,
+    );
+    const r = await fetchRequest.fetch();
+
+    if (r.statusCode !== 200) {
+      throw buildErrorObject(r);
+    }
+
+    return JSON.parse(r.bodyString).data;
+  };
+
+  dependencyLibrary.getTogglData = async function getTogglData() {
     const fetchRequest = new URL.FetchRequest();
     fetchRequest.method = 'GET';
     fetchRequest.headers = {
@@ -155,7 +186,7 @@
       throw buildErrorObject(r);
     }
 
-    return JSON.parse(r.bodyString).data.projects;
+    return JSON.parse(r.bodyString).data;
   };
 
   dependencyLibrary.log = async function log(message, title = 'Log') {
